@@ -425,6 +425,47 @@ h2 {
     color: var(--ink);
 }
 
+/* Nav dropdown */
+.nav-dropdown {
+    position: relative;
+}
+.nav-dropdown .dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    min-width: 10rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    padding: 0.35rem 0;
+    z-index: 100;
+    list-style: none;
+}
+.nav-dropdown.open .dropdown-menu {
+    display: block;
+    animation: dropIn 180ms ease;
+}
+@keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.dropdown-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: background 120ms, color 120ms;
+}
+.dropdown-menu li a:hover {
+    background: var(--bg);
+    color: var(--ink);
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));

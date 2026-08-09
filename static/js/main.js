@@ -2,6 +2,13 @@
  * AVI Bot frontend interactions.
  */
 
+/* Close nav dropdowns on outside click */
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(dd) {
+        if (!dd.contains(e.target)) dd.classList.remove('open');
+    });
+});
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast');
     if (!container) return;
