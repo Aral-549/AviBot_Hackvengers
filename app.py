@@ -32,8 +32,16 @@ init_db()
 
 # Start Telegram polling in a background daemon thread
 # (runs regardless of whether app is started via gunicorn or python directly)
-_telegram_thread = threading.Thread(target=poll_telegram_bot, daemon=True, name="telegram-poll")
-_telegram_thread.start()
+import logging as _logging
+_logger = _logging.getLogger("app_startup")
+
+try:
+    _telegram_thread = threading.Thread(target=poll_telegram_bot, daemon=True, name="telegram-poll")
+    _telegram_thread.start()
+    _logger.info("✅ Telegram polling thread started successfully")
+except Exception as _tg_err:
+    _logger.error(f"❌ Failed to start Telegram polling thread: {_tg_err}")
+    _telegram_thread = None
 
 
 # ==================== Dashboard Routes ====================
@@ -41,6 +49,18 @@ _telegram_thread.start()
 @app.route('/favicon.ico')
 def favicon():
     return '', 204
+
+
+@app.route('/healthz')
+def healthz():
+    """Health check — shows Telegram polling thread status."""
+    tg_alive = _telegram_thread is not None and _telegram_thread.is_alive()
+    token_set = bool(Config.TELEGRAM_BOT_TOKEN)
+    return jsonify({
+        'status': 'ok',
+        'telegram_thread_alive': tg_alive,
+        'telegram_token_set': token_set,
+    }), 200 if tg_alive else 503
 
 
 @app.route('/')
