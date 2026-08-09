@@ -8,3 +8,4 @@ lxml==5.2.2
 python-dotenv==1.0.0
 orjson==3.9.10
 yt-dlp
+twilio
