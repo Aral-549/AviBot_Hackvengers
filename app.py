@@ -130,6 +130,51 @@ def stats_page():
         recent=get_all_content(limit=8),
         collections=get_collections()
     )
+
+
+@app.route('/discover')
+def discover():
+    """Discover page — browse the archive by platform and category."""
+    page = request.args.get('page', 1, type=int)
+    platform = request.args.get('platform', '')
+    category = request.args.get('category', '')
+    search_query = request.args.get('q', '').strip()
+
+    limit = Config.ITEMS_PER_PAGE
+    offset = (page - 1) * limit
+
+    content = get_all_content(
+        limit=limit,
+        offset=offset,
+        platform=platform if platform else None,
+        category=category if category else None,
+        search_query=search_query if search_query else None
+    )
+
+    total_count = get_content_count(
+        platform=platform if platform else None,
+        category=category if category else None,
+        search_query=search_query if search_query else None
+    )
+
+    categories = get_categories()
+    platforms = get_platforms()
+
+    total_pages = max(1, (total_count + limit - 1) // limit)
+
+    return render_template(
+        'discover.html',
+        content=content,
+        categories=categories,
+        platforms=platforms,
+        current_page=page,
+        total_pages=total_pages,
+        selected_platform=platform,
+        selected_category=category,
+        search_query=search_query
+    )
+
+
 @app.route('/api/content', methods=['GET'])
 def api_get_content():
     """API: Get all content with filters"""
