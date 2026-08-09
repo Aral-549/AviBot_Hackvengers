@@ -1,5 +1,5 @@
 """
-Social Saver Bot - Main Application
+AVI Bot - Main Application
 Flask web app with WhatsApp webhook integration
 """
 
@@ -731,7 +731,7 @@ def whatsapp_webhook():
             else:
                 motivational = "Legendary! You're a knowledge hoarder!"
 
-            message = f"Your Social Saver Stats!\n\n"
+            message = f"Your AVI Bot Stats!\n\n"
             message += f"Current streak: {current} days\n"
             message += f"Saved this week: {weekly} links\n"
             message += f"Best streak ever: {best} days\n\n"
@@ -771,7 +771,7 @@ def whatsapp_webhook():
                     response.message(answer)
 
         else:
-            response.message("Welcome to Social Saver Bot!\n\n"
+            response.message("Welcome to AVI Bot!\n\n"
                             "Send me any URL from Instagram, Twitter, Facebook, YouTube, "
                             "or any blog, and I'll save it with AI-generated categories and summaries.\n\n"
                             "Or try these commands:\n"
@@ -888,7 +888,7 @@ def send_weekly_digest():
         top_3 = sorted_cats[:3]
 
         base_url = request.host_url.rstrip('/')
-        message = f"Your Weekly Social Saver Digest!\n\n"
+        message = f"Your Weekly AVI Bot Digest!\n\n"
         message += f"You saved {total} links this week\n\n"
         message += "Top categories:\n"
 
@@ -939,7 +939,7 @@ def export_csv():
     return Response(
         output.getvalue(),
         mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=social_saver_export.csv'}
+        headers={'Content-Disposition': 'attachment; filename=avi_bot_export.csv'}
     )
 
 

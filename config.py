@@ -39,7 +39,7 @@ class Config:
     GEMINI_VIDEO_MODEL = os.getenv('GEMINI_VIDEO_MODEL', 'gemini-2.0-flash-001')
 
     ACTIVE_AI_PROVIDER = os.getenv('ACTIVE_AI_PROVIDER', 'openrouter')
-    DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'social_saver.db'))
+    DATABASE_PATH = os.getenv('DATABASE_PATH', os.path.join(os.path.dirname(__file__), 'avi_bot.db'))
     ITEMS_PER_PAGE = int(os.getenv('ITEMS_PER_PAGE', 20))
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 5000))
 

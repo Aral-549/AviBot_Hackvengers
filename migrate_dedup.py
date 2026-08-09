@@ -17,7 +17,7 @@ creation is IF NOT EXISTS.
 import os
 import sqlite3
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'social_saver.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), 'avi_bot.db')
 
 
 def migrate():

@@ -1,5 +1,5 @@
 """
-Content Extractor for Social Saver Bot
+Content Extractor for AVI Bot
 Extracts content from various social media platforms and blogs
 """
 

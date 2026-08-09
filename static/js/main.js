@@ -1,5 +1,5 @@
 /**
- * Social Saver frontend interactions.
+ * AVI Bot frontend interactions.
  */
 
 function showToast(message, type = 'success') {

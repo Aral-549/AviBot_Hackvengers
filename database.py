@@ -1,5 +1,5 @@
 """
-Database module for Social Saver Bot / AVI Bot
+Database module for AVI Bot / AVI Bot
 Handles SQLite operations for storing and retrieving saved content.
 Features: Content Indexing, FTS / LIKE Search Fallback, Tag Parsing,
 Category Statistics, and Connection Management.
@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from config import Config
 
 # Database file path & Backup directory
-DB_PATH = getattr(Config, 'DATABASE_PATH', None) or os.getenv('DATABASE_PATH') or os.path.join(os.path.dirname(__file__), 'social_saver.db')
+DB_PATH = getattr(Config, 'DATABASE_PATH', None) or os.getenv('DATABASE_PATH') or os.path.join(os.path.dirname(__file__), 'avi_bot.db')
 BACKUP_DIR = os.getenv('BACKUP_DIR', os.path.join(os.path.dirname(__file__), 'backups'))
 BACKUP_FILE = os.path.join(BACKUP_DIR, 'link_vault_backup.jsonl')
 

@@ -1,5 +1,5 @@
 """
-AI Processor for Social Saver Bot
+AI Processor for AVI Bot
 Uses Groq for text tasks and Gemini for multimodal summaries.
 """
 
