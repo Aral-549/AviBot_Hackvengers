@@ -1,5 +1,7 @@
 # Avi
 
+**Try it now: [t.me/Avi514_bot](https://t.me/Avi514_bot)** — send it a link and see it work.
+
 Avi turns any link you send it — Instagram, YouTube, TikTok, Twitter/X, Reddit, LinkedIn, Pinterest, Facebook, or a plain blog post — into a searchable, categorized, AI-summarized entry in your personal knowledge library. Send it a URL over Telegram or WhatsApp; it scrapes the content, figures out what it is, writes a one-line hook summary and (for video) a longer summary, tags it, and files it into one of 100 preset categories. Everything lands in a Flask dashboard you can search, filter, and export.
 
 ## What it does
