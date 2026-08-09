@@ -1,50 +1,57 @@
-# Avi — AI-Powered Link Library
+# Avi
 
-> Save any link via Telegram. AVI Bot scrapes, categorises, summarises, and stores it using AI — then surfaces it through a beautiful web dashboard.
+Avi turns any link you send it — Instagram, YouTube, TikTok, Twitter/X, Reddit, LinkedIn, Pinterest, Facebook, or a plain blog post — into a searchable, categorized, AI-summarized entry in your personal knowledge library. Send it a URL over Telegram or WhatsApp; it scrapes the content, figures out what it is, writes a one-line hook summary and (for video) a longer summary, tags it, and files it into one of 100 preset categories. Everything lands in a Flask dashboard you can search, filter, and export.
 
 ## What it does
 
-Send any URL to the Telegram bot → AVI Bot automatically:
-1. **Scrapes** the page (5-layer fallback: Requests → OG Tags → Playwright → yt-dlp → Raw)
-2. **Categorises** it with AI (OpenRouter → Groq → Gemini → algorithmic fallback)
-3. **Summarises** it into a one-liner hook sentence
-4. **Extracts tags** and stores everything in SQLite
-5. **Replies instantly** in Telegram with the result
-6. Viewable on a **premium dark web dashboard** at `localhost:5000`
+- **Capture** — send a link via Telegram or WhatsApp (Twilio); Avi extracts it in the background and replies with the result.
+- **Extract** — a 5-layer fallback scraper (platform-specific parser → generic OpenGraph/meta tags → headless browser via Playwright → yt-dlp → raw URL fallback) guarantees every link resolves to *something*, even paywalled or JS-heavy pages.
+- **Understand** — an LLM pipeline (OpenRouter → Groq → Gemini, with a rule-based fallback if all three are unavailable) assigns a category, writes a short "hook" summary, generates a detailed multi-sentence summary for video/reel content via Gemini multimodal, and extracts 8–12 searchable tags.
+- **Organize** — SQLite + FTS5 full-text search, category/platform filters, user-created collections, tag browsing, and a daily activity heatmap.
+- **Resurface** — WhatsApp commands (`surprise me`, `motivate me`, `teach me`, `feed me`, `my streak`, `ask: <question>`) and scheduled daily-dose / weekly-digest messages bring old saves back to the top.
+- **Ask your library** — a lightweight RAG flow (`ask: <question>`) searches your saved content and answers using only what you've actually saved.
+- **Export** — CSV export and a full Obsidian-compatible Markdown vault export (one note per saved item, with YAML frontmatter and tags).
 
-## Tech Stack
+## Architecture
 
-| Layer | Tech |
-|---|---|
-| Bot | Python + python-telegram-bot (polling) |
-| AI | OpenRouter (claude/mistral/llama), Groq, Gemini |
-| Scraping | requests, BeautifulSoup, Playwright, yt-dlp |
-| Database | SQLite (WAL mode) + JSONL backup ledger |
-| Web Dashboard | Flask + Jinja2 |
-| Export | Obsidian Markdown vault, CSV |
+```
+telegram_bot.py   — Telegram polling loop: receives links/commands, replies with results
+app.py            — Flask app: dashboard, REST API, WhatsApp (Twilio) webhook, scheduled digests
+content_extractor.py — 5-layer scraping fallback chain per platform
+ai_processor.py   — LLM provider router (OpenRouter/Groq/Gemini) + category/summary/tag generation
+database.py       — SQLite access layer, FTS5 search, collections, streaks, Obsidian/JSONL backup export
+config.py         — env-driven settings, category list, all LLM prompts
+```
+
+Two independent entry points share the same database and AI/extraction pipeline: `app.py` (web dashboard + WhatsApp) and `telegram_bot.py` (Telegram). Run them as separate processes.
 
 ## Setup
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # fill in your API keys
-python3 app.py         # web dashboard → http://localhost:5000
-python3 telegram_bot.py  # Telegram listener
+cp .env.example .env   # fill in API keys below
+python app.py           # dashboard on :5000
+python telegram_bot.py  # separate process, only if using Telegram intake
 ```
 
-## Environment Variables
+### Environment variables
 
-See `.env.example` for all required keys:
-- `TELEGRAM_BOT_TOKEN`
-- `OPENROUTER_API_KEY`
-- `GROQ_API_KEY`
-- `GEMINI_API_KEY`
+| Variable | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` | At least one required for AI categorization/summarization; falls back to rule-based logic if none are set |
+| `ACTIVE_AI_PROVIDER` | Preferred provider first in the fallback chain (`openrouter`, `groq`, or `gemini`) |
+| `TELEGRAM_BOT_TOKEN` | Required only for `telegram_bot.py` |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_PHONE_NUMBER` | Required only for WhatsApp intake/notifications |
+| `YTDLP_ENABLED` | Toggle the yt-dlp extraction layer |
+| `SECRET_KEY` | Flask session secret — set a real value in production |
 
-## Features
+## Known limitations
 
-- **Zero-failure AI chain** — 4-tier LLM fallback, never drops a link
-- **Multi-layer scraper** — handles SPAs, paywalls, video platforms
-- **Obsidian sync** — export your entire library as Markdown notes
-- **Collections** — organise saved links into folders
-- **Full-text search** — FTS5 SQLite index for instant search
-- **Duplicate guard** — same URL never processed twice
+- AI categorization can be unreliable when the LLM doesn't return a clean category name (see fallback fuzzy-matching in `categorize_content`) — it's under active fixing.
+- No `UNIQUE` constraint on saved URLs yet; concurrent saves of the same link can create duplicate rows.
+- Playwright (headless-browser fallback layer) is optional — install `playwright` and run `playwright install chromium` if you want it; the pipeline degrades gracefully without it.
+- Backup ledger and Obsidian export write to a path relative to the app directory — on hosts with ephemeral filesystems, only the SQLite DB persists unless you point `DATABASE_PATH` (and equivalent) at mounted storage.
+
+## Tech stack
+
+Flask, SQLite (FTS5), BeautifulSoup4, yt-dlp, Playwright (optional), Twilio, OpenRouter/Groq/Gemini APIs.
