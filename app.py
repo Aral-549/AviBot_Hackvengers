@@ -1026,9 +1026,7 @@ def export_obsidian_zip():
 # ==================== Main Entry Point ====================
 
 if __name__ == '__main__':
-    config = get_config()
-    app.run(
-        host=config.HOST,
-        port=config.PORT,
-        debug=config.DEBUG
-    )
+    import os as _os
+    port = int(_os.environ.get('PORT', 5000))
+    debug = _os.environ.get('FLASK_ENV', 'development') != 'production'
+    app.run(host='0.0.0.0', port=port, debug=debug)
