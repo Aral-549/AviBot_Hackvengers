@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVI Bot — Your AI Link Library</title>
+  <meta name="description" content="AVI Bot — save, categorise, and rediscover every link you share on Telegram. Powered by AI.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#09090b;--surface:#111113;--surface-2:#18181b;
+      --border:#27272a;--border-2:#3f3f46;
+      --text:#fafafa;--muted:#71717a;--muted-2:#a1a1aa;
+      --accent:#10b981;--accent-dim:#064e3b;--accent-glow:rgba(16,185,129,.18);
+      --violet:#8b5cf6;--amber:#f59e0b;--rose:#f43f5e;--sky:#38bdf8;
+      --radius:12px;--radius-sm:8px;--radius-lg:18px;--nav-h:64px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{font-family:'Geist',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;line-height:1.6;-webkit-font-smoothing:antialiased;}
+    a{text-decoration:none;color:inherit;}
+    button{font-family:inherit;cursor:pointer;border:none;}
+    input,select,textarea{font-family:inherit;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:99px;}
+
+    /* NAV */
+    .nav{height:var(--nav-h);background:rgba(9,9,11,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:100;}
+    .nav-logo{display:flex;align-items:center;gap:.6rem;font-size:1.25rem;font-weight:800;letter-spacing:-.03em;}
+    .nav-logo .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 2.4s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+    .nav-links{display:flex;align-items:center;gap:.25rem;list-style:none;}
+    .nav-links a{padding:.4rem .85rem;border-radius:var(--radius-sm);font-size:.9rem;font-weight:500;color:var(--muted-2);transition:color .15s,background .15s;}
+    .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--surface-2);}
+    .nav-actions{display:flex;gap:.5rem;}
+    .nav-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;transition:all .15s;}
+    .nav-btn-ghost{background:transparent;border:1px solid var(--border-2);color:var(--muted-2);}
+    .nav-btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+    @media(max-width:768px){.nav-links{display:none;}}
+
+    /* LAYOUT */
+    .wrap{max-width:1380px;margin:0 auto;padding:2.5rem 2rem 4rem;}
+    @media(max-width:768px){.wrap{padding:1.5rem 1rem 3rem;}}
+
+    /* PAGE HEADER */
+    .page-header{margin-bottom:2rem;}
+    .page-header h1{font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1.1;}
+    .page-header h1 em{font-style:normal;color:var(--accent);}
+    .page-header p{color:var(--muted-2);font-size:.95rem;margin-top:.35rem;}
+
+    /* STATS */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem;}
+    @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:520px){.stats{grid-template-columns:1fr 1fr;gap:.6rem;}}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;transition:border-color .2s,transform .2s;position:relative;overflow:hidden;}
+    .stat::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;}
+    .stat:hover{transform:translateY(-2px);}
+    .stat:hover::before{opacity:1;}
+    .s-total::before{background:radial-gradient(ellipse at top left,rgba(16,185,129,.08),transparent 70%);}
+    .s-week::before{background:radial-gradient(ellipse at top left,rgba(139,92,246,.08),transparent 70%);}
+    .s-cats::before{background:radial-gradient(ellipse at top left,rgba(245,158,11,.08),transparent 70%);}
+    .s-users::before{background:radial-gradient(ellipse at top left,rgba(244,63,94,.08),transparent 70%);}
+    .s-total:hover{border-color:rgba(16,185,129,.3);}
+    .s-week:hover{border-color:rgba(139,92,246,.3);}
+    .s-cats:hover{border-color:rgba(245,158,11,.3);}
+    .s-users:hover{border-color:rgba(244,63,94,.3);}
+    .stat-val{font-size:2.4rem;font-weight:900;letter-spacing:-.05em;line-height:1;margin-bottom:.3rem;font-variant-numeric:tabular-nums;}
+    .s-total .stat-val{color:var(--accent);}
+    .s-week .stat-val{color:var(--violet);}
+    .s-cats .stat-val{color:var(--amber);}
+    .s-users .stat-val{color:var(--rose);}
+    .stat-lbl{font-size:.75rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+    /* SAVE BOX */
+    .save-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.75rem;transition:border-color .2s,box-shadow .2s;}
+    .save-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+    .save-label{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.75rem;}
+    .save-row{display:flex;gap:.75rem;}
+    @media(max-width:600px){.save-row{flex-direction:column;}}
+    .save-inp{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem 1.25rem;color:var(--text);font-size:.95rem;transition:border-color .2s;min-width:0;}
+    .save-inp:focus{outline:none;border-color:var(--accent);}
+    .save-inp::placeholder{color:var(--muted);}
+    .save-btn{background:var(--accent);color:#fff;border-radius:var(--radius-sm);padding:.85rem 1.75rem;font-size:.9rem;font-weight:700;letter-spacing:-.01em;transition:background .15s,transform .1s,box-shadow .15s;white-space:nowrap;display:flex;align-items:center;gap:.45rem;}
+    .save-btn:hover{background:#059669;box-shadow:0 0 20px var(--accent-glow);}
+    .save-btn:active{transform:scale(.98);}
+    .save-status{font-size:.78rem;color:var(--muted);margin-top:.6rem;min-height:1.2em;transition:color .2s;}
+    .save-status.saving{color:var(--amber);}
+    .save-status.ok{color:var(--accent);}
+    .save-status.err{color:var(--rose);}
+
+    /* FILTERS */
+    .filters{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem;}
+    .search-wrap{position:relative;flex:1;min-width:220px;}
+    .search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+    .filter-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem .9rem .7rem 2.5rem;color:var(--text);font-size:.9rem;transition:border-color .2s;}
+    .filter-inp:focus{outline:none;border-color:var(--accent);}
+    .filter-inp::placeholder{color:var(--muted);}
+    .filter-select{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 2rem .7rem 1rem;color:var(--text);font-size:.9rem;cursor:pointer;transition:border-color .2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .75rem center;}
+    .filter-select:focus{outline:none;border-color:var(--accent);}
+    .filter-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.25rem;border-radius:var(--radius-sm);font-size:.875rem;font-weight:600;transition:all .15s;}
+    .fb-primary{background:var(--accent);color:#fff;}
+    .fb-primary:hover{background:#059669;}
+    .fb-ghost{background:var(--surface);border:1px solid var(--border);color:var(--muted-2);}
+    .fb-ghost:hover{border-color:var(--border-2);color:var(--text);}
+
+    /* COLLECTIONS BAR */
+    .col-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);}
+    .col-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .85rem;border-radius:99px;font-size:.8rem;font-weight:500;border:1px solid var(--border);color:var(--muted-2);background:var(--surface);transition:all .15s;white-space:nowrap;}
+    .col-chip:hover{border-color:var(--border-2);color:var(--text);}
+    .col-chip.active{background:var(--accent-dim);border-color:rgba(16,185,129,.4);color:var(--accent);}
+    .col-chip-wrap{position:relative;display:inline-flex;align-items:center;}
+    .col-del{background:none;border:none;color:var(--muted);font-size:.75rem;margin-left:.1rem;padding:.15rem .3rem;border-radius:4px;transition:color .15s,background .15s;line-height:1;}
+    .col-del:hover{color:var(--rose);background:rgba(244,63,94,.1);}
+    .col-create{display:inline-flex;align-items:center;gap:.4rem;}
+    .col-create-inp{background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:.3rem .75rem;color:var(--text);font-size:.78rem;width:130px;transition:border-color .2s;}
+    .col-create-inp:focus{outline:none;border-color:var(--accent);}
+    .col-create-inp::placeholder{color:var(--muted);}
+    .col-create-btn{background:var(--surface-2);border:1px solid var(--border-2);border-radius:99px;color:var(--text);font-size:.75rem;font-weight:600;padding:.3rem .75rem;transition:all .15s;}
+    .col-create-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+    /* CARD GRID */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;}
+    @media(max-width:700px){.grid{grid-template-columns:1fr;}}
+
+    /* CARD */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative;}
+    .card:hover{border-color:var(--border-2);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+
+    .card-thumb{aspect-ratio:16/9;background:var(--surface-2);position:relative;overflow:hidden;flex-shrink:0;}
+    .card-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+    .card:hover .card-thumb img{transform:scale(1.04);}
+    .card-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:var(--muted);}
+    .card-ph svg{width:2rem;height:2rem;opacity:.4;}
+    .card-ph span{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+    .card-ph.youtube{color:#ff4444;}
+    .card-ph.instagram{color:#e1306c;}
+    .card-ph.twitter,.card-ph.x{color:#1da1f2;}
+    .card-ph.tiktok{color:#ff0050;}
+    .card-ph.reddit{color:#ff4500;}
+    .card-ph.github{color:var(--muted-2);}
+
+    .card-platform{position:absolute;top:.6rem;left:.6rem;background:rgba(9,9,11,.78);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:5px;font-size:.67rem;font-weight:700;color:var(--muted-2);padding:.18rem .5rem;text-transform:uppercase;letter-spacing:.05em;}
+    .card-vbadge{position:absolute;top:.6rem;right:.6rem;background:rgba(236,72,153,.82);border-radius:5px;font-size:.62rem;font-weight:700;color:#fff;padding:.18rem .45rem;text-transform:uppercase;letter-spacing:.04em;}
+
+    .card-body{padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;flex:1;}
+    .card-title{font-size:.9rem;font-weight:600;line-height:1.35;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .card-summary{font-size:.77rem;color:var(--muted-2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+    .card-cat{display:inline-flex;align-items:center;gap:.3rem;background:var(--accent-dim);border:1px solid rgba(16,185,129,.22);border-radius:99px;color:var(--accent);font-size:.68rem;font-weight:600;padding:.15rem .55rem;width:fit-content;}
+    .card-tags{display:flex;flex-wrap:wrap;gap:.3rem;}
+    .card-tag{background:var(--surface-2);border:1px solid var(--border);border-radius:4px;font-size:.66rem;font-weight:500;color:var(--muted-2);padding:.1rem .4rem;font-family:'Geist Mono',monospace;}
+
+    .card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:.55rem;border-top:1px solid var(--border);}
+    .card-date{font-size:.7rem;color:var(--muted);}
+    .card-actions{display:flex;gap:.3rem;}
+    .cta{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.28rem .48rem;color:var(--muted);font-size:.75rem;transition:all .15s;display:flex;align-items:center;}
+    .cta:hover{border-color:var(--border-2);color:var(--text);}
+    .cta.del:hover{border-color:rgba(244,63,94,.4);color:var(--rose);background:rgba(244,63,94,.08);}
+
+    .signal{display:inline-flex;align-items:center;gap:.25rem;font-size:.67rem;font-weight:500;color:var(--muted);background:var(--surface-2);border-radius:4px;padding:.1rem .4rem;}
+    .signal.video{color:#ec4899;}
+    .signal.warning{color:var(--amber);}
+
+    .col-assign{margin-top:.25rem;}
+    .col-assign select{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.22rem .5rem;color:var(--muted-2);font-size:.7rem;cursor:pointer;width:100%;transition:border-color .2s;}
+    .col-assign select:focus{outline:none;border-color:var(--accent);}
+
+    /* EMPTY */
+    .empty{grid-column:1/-1;text-align:center;padding:5rem 2rem;}
+    .empty-icon{width:72px;height:72px;margin:0 auto 1.5rem;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.75rem;color:var(--accent);}
+    .empty h2{font-size:1.4rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.4rem;}
+    .empty p{color:var(--muted-2);font-size:.9rem;}
+
+    /* PAGINATION */
+    .pagination{display:flex;justify-content:center;gap:.4rem;margin-top:2.5rem;flex-wrap:wrap;}
+    .pagination a,.pagination span{padding:.5rem .9rem;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--muted-2);font-size:.85rem;transition:all .15s;}
+    .pagination a:hover{border-color:var(--accent);color:var(--accent);}
+    .pagination .current{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+
+    /* MODAL */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+    .modal.active{display:flex;}
+    .modal-box{background:var(--surface);border:1px solid var(--border-2);border-radius:var(--radius-lg);padding:1.75rem;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(0,0,0,.6);}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+    .modal-head h2{font-size:1.1rem;font-weight:700;letter-spacing:-.02em;}
+    .modal-close{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted);font-size:1rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:color .15s;line-height:1;}
+    .modal-close:hover{color:var(--text);}
+    .form-group{margin-bottom:1rem;}
+    .form-group label{display:block;font-size:.78rem;font-weight:500;color:var(--muted-2);margin-bottom:.4rem;}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.72rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.9rem;transition:border-color .2s;}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--accent);}
+    .form-group textarea{resize:vertical;min-height:90px;}
+    .modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.25rem;}
+    .btn-save{background:var(--accent);color:#fff;border-radius:var(--radius-sm);padding:.6rem 1.5rem;font-size:.875rem;font-weight:600;transition:background .15s;}
+    .btn-save:hover{background:#059669;}
+    .btn-cancel{background:var(--surface-2);border:1px solid var(--border);color:var(--muted-2);border-radius:var(--radius-sm);padding:.6rem 1.25rem;font-size:.875rem;font-weight:600;transition:all .15s;}
+    .btn-cancel:hover{color:var(--text);border-color:var(--border-2);}
+
+    /* TOASTS */
+    .toast-area{position:fixed;top:calc(var(--nav-h) + .75rem);right:1.25rem;z-index:300;display:flex;flex-direction:column;gap:.5rem;}
+    .toast{background:var(--surface);border:1px solid var(--border-2);border-radius:var(--radius);padding:.7rem 1.2rem;font-size:.85rem;font-weight:500;display:flex;align-items:center;gap:.55rem;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .25s cubic-bezier(.16,1,.3,1) forwards;max-width:300px;}
+    .toast.success{border-left:3px solid var(--accent);}
+    .toast.error{border-left:3px solid var(--rose);}
+    .toast.info{border-left:3px solid var(--sky);}
+    @keyframes tin{from{opacity:0;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
+    @keyframes tout{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(100%);}}
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="{{ url_for('dashboard') }}" class="nav-logo">
+    <div class="dot"></div>AVI Bot
+  </a>
+  <ul class="nav-links">
+    <li><a href="{{ url_for('dashboard') }}" class="active">Library</a></li>
+    <li><a href="{{ url_for('discover') }}">Discover</a></li>
+    <li><a href="{{ url_for('stats_page') }}">Stats</a></li>
+    <li><a href="/collections">Collections</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/export/obsidian" class="nav-btn nav-btn-ghost">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Obsidian
+    </a>
+    <a href="/export/csv" class="nav-btn nav-btn-ghost">CSV</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Your <em>saved</em> links</h1>
+    <p>Everything bookmarked — organised, searchable, and rediscoverable.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat s-total">
+      <div class="stat-val" data-target="{{ stats.total }}">{{ stats.total }}</div>
+      <div class="stat-lbl">Total saved</div>
+    </div>
+    <div class="stat s-week">
+      <div class="stat-val" data-target="{{ stats.recent_7_days }}">{{ stats.recent_7_days }}</div>
+      <div class="stat-lbl">This week</div>
+    </div>
+    <div class="stat s-cats">
+      <div class="stat-val" data-target="{{ stats.by_category|length }}">{{ stats.by_category|length }}</div>
+      <div class="stat-lbl">Categories</div>
+    </div>
+    <div class="stat s-users">
+      <div class="stat-val" data-target="{{ stats.unique_users }}">{{ stats.unique_users }}</div>
+      <div class="stat-lbl">Telegram users</div>
+    </div>
+  </div>
+
+  <!-- SAVE BOX -->
+  <div class="save-box">
+    <span class="save-label">Save a new link</span>
+    <div class="save-row">
+      <input type="url" id="urlInput" class="save-inp" placeholder="Paste any URL — YouTube, GitHub, article, X post…">
+      <button id="saveBtn" class="save-btn" onclick="saveUrl()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+    </div>
+    <div id="saveStatus" class="save-status"></div>
+  </div>
+
+  <!-- FILTERS -->
+  <form method="GET" action="{{ url_for('dashboard') }}" class="filters">
+    <div class="search-wrap">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" name="q" class="filter-inp" placeholder="Search titles, summaries, tags…" value="{{ search_query or '' }}">
+    </div>
+    <select name="platform" class="filter-select">
+      <option value="">All platforms</option>
+      {% for p in platforms %}
+      <option value="{{ p }}" {% if selected_platform == p %}selected{% endif %}>{{ p|title }}</option>
+      {% endfor %}
+    </select>
+    <select name="category" class="filter-select">
+      <option value="">All categories</option>
+      {% for c in categories %}
+      <option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="filter-btn fb-primary">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filter
+    </button>
+    {% if selected_platform or selected_category or search_query %}
+    <a href="{{ url_for('dashboard') }}" class="filter-btn fb-ghost">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Clear
+    </a>
+    {% endif %}
+  </form>
+
+  <!-- COLLECTIONS BAR -->
+  <div class="col-bar">
+    <a href="{{ url_for('dashboard') }}" class="col-chip {% if not selected_collection %}active{% endif %}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      All
+    </a>
+    {% for col in collections %}
+    <div class="col-chip-wrap">
+      <a href="{{ url_for('collections_page', collection=col) }}" class="col-chip {% if selected_collection == col %}active{% endif %}">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        {{ col }}
+      </a>
+      <form method="POST" action="{{ url_for('delete_collection_route') }}" style="display:inline">
+        <input type="hidden" name="name" value="{{ col }}">
+        <button type="submit" class="col-del" onclick="return confirm('Delete folder?')">×</button>
+      </form>
+    </div>
+    {% endfor %}
+    <form method="POST" action="{{ url_for('create_collection_route') }}" class="col-create">
+      <input name="name" placeholder="New folder…" class="col-create-inp" maxlength="40">
+      <button type="submit" class="col-create-btn">+ Add</button>
+    </form>
+  </div>
+
+  <!-- CARD GRID -->
+  {% if content %}
+  <div class="grid">
+    {% for item in content %}
+    <a href="{{ url_for('content_detail', content_id=item.id) }}" class="card" id="card-{{ item.id }}">
+
+      <div class="card-thumb">
+        {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        {% endif %}
+        <div class="card-ph {{ item.platform }}" {% if item.image_url %}style="display:none"{% endif %}>
+          {% if item.platform == 'youtube' %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 7s-.3-2-1.2-2.8c-1.2-1.2-2.4-1.2-3-1.3C16.2 2.7 12 2.7 12 2.7s-4.2 0-6.8.2c-.6.1-1.8.1-3 1.3C1.3 5 1 7 1 7S.7 9.2.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.2 1.2 2.7 1.1 3.4 1.2C7.6 21.7 12 21.7 12 21.7s4.2 0 6.8-.3c.6-.1 1.8-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.2 23 7 23 7zM9.7 15.5V8.3l8.1 3.6-8.1 3.6z"/></svg>
+          <span>YouTube</span>
+          {% elif item.platform == 'instagram' %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 3.3.2 4.8 1.7 5 5 .1 1.3.1 1.6.1 4.8 0 3.2 0 3.6-.1 4.8-.2 3.2-1.7 4.8-5 5-1.3.1-1.6.1-4.9.1-3.2 0-3.6 0-4.8-.1-3.3-.2-4.8-1.8-5-5C2.1 15.7 2 15.3 2 12s0-3.5.1-4.8C2.3 3.9 3.8 2.4 7.2 2.2c1.2-.1 1.6-.1 4.8-.1zm0-2.2C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12s0 3.7.1 4.9C.3 21.3 2.7 23.7 7.1 23.9c1.2.1 1.6.1 4.9.1s3.7 0 4.9-.1c4.4-.2 6.8-2.6 7-7 .1-1.2.1-1.6.1-4.9s0-3.7-.1-4.9C23.7 2.7 21.3.3 16.9.1 15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+          <span>Instagram</span>
+          {% elif item.platform in ['twitter','x'] %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span>X / Twitter</span>
+          {% elif item.platform == 'github' %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          <span>GitHub</span>
+          {% elif item.platform == 'reddit' %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+          <span>Reddit</span>
+          {% else %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>{{ item.platform|title }}</span>
+          {% endif %}
+        </div>
+        <span class="card-platform">{{ item.platform }}</span>
+        {% if item.video_summary %}<span class="card-vbadge">▶ AI Video</span>{% endif %}
+      </div>
+
+      <div class="card-body">
+        <div class="card-title">{{ item.title or 'Untitled' }}</div>
+
+        {% if item.video_summary %}
+        <span class="signal video">▶ Gemini video summary</span>
+        {% elif item.video_summary_status and item.video_summary_status not in ['', 'not_applicable'] %}
+        <span class="signal warning">⚠ {{ item.video_summary_status.replace('_',' ') }}</span>
+        {% endif %}
+
+        <p class="card-summary">{{ item.video_summary or item.summary or item.caption or 'No description.' }}</p>
+
+        {% if item.category %}<span class="card-cat">{{ item.category }}</span>{% endif %}
+
+        {% if item.tags %}
+        <div class="card-tags">
+          {% for tag in item.tags.split(',')[:4] %}
+          <span class="card-tag">{{ tag.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="card-footer">
+          <span class="card-date">{{ item.timestamp[:10] }}</span>
+          <div class="card-actions" onclick="event.stopPropagation()">
+            <button class="cta" onclick="copyLink('{{ item.url }}',this)" title="Copy">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </button>
+            <button class="cta" onclick="openEdit({{ item.id }},'{{ item.title|replace("'","&#39;")|replace('"','&quot;') }}','{{ (item.summary or '')|replace("'","&#39;")|replace('"','&quot;')|truncate(200,True,'') }}','{{ item.category or '' }}')" title="Edit">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="cta del" onclick="deleteItem({{ item.id }})" title="Delete">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {% if collections %}
+        <div class="col-assign" onclick="event.stopPropagation()">
+          <select onchange="assignCol({{ item.id }},this.value,this)">
+            <option value="">Move to folder…</option>
+            {% for col in collections %}
+            <option value="{{ col }}" {% if item.collection == col %}selected{% endif %}>{{ col }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="grid">
+    <div class="empty">
+      <div class="empty-icon">⚡</div>
+      <h2>Nothing saved yet</h2>
+      <p>Paste a URL above or send a link to your Telegram bot to get started.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- PAGINATION -->
+  {% if total_pages and total_pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page-1 }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_platform %}&platform={{ selected_platform }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">&larr;</a>
+    {% endif %}
+    {% for p in range(1, total_pages+1) %}
+    {% if p == page %}<span class="current">{{ p }}</span>
+    {% elif p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
+    <a href="?page={{ p }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_platform %}&platform={{ selected_platform }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">{{ p }}</a>
+    {% elif p == page-3 or p == page+3 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?page={{ page+1 }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_platform %}&platform={{ selected_platform }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}">&rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div><!-- /wrap -->
+
+<!-- EDIT MODAL -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Edit item</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="editTitle" maxlength="200">
+    </div>
+    <div class="form-group">
+      <label>Summary</label>
+      <textarea id="editSummary" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="editCategory">
+        {% for cat in all_categories %}
+        <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="submitEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-area" id="toasts"></div>
+
+<script>
+function toast(msg,type,dur){
+  type=type||'success';dur=dur||3200;
+  const a=document.getElementById('toasts');
+  const e=document.createElement('div');
+  e.className='toast '+type;
+  e.innerHTML='<span style="font-weight:700">'+(type==='success'?'✓':type==='error'?'✕':'ℹ')+'</span>'+msg;
+  a.appendChild(e);
+  setTimeout(()=>{e.style.animation='tout .25s ease forwards';e.addEventListener('animationend',()=>e.remove());},dur);
+}
+
+/* SAVE */
+async function saveUrl(){
+  const inp=document.getElementById('urlInput');
+  const btn=document.getElementById('saveBtn');
+  const st=document.getElementById('saveStatus');
+  const url=inp.value.trim();
+  if(!url){toast('Please paste a URL first.','error');return;}
+  btn.disabled=true;
+  btn.textContent='Saving…';
+  st.textContent='Fetching page & running AI…';
+  st.className='save-status saving';
+  try{
+    const res=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const d=await res.json();
+    if(res.ok&&d.success){
+      st.textContent='Saved: '+(d.title||url);
+      st.className='save-status ok';
+      inp.value='';
+      toast('Saved — "'+(d.title||url)+'"','success');
+      setTimeout(()=>location.reload(),1200);
+    }else throw new Error(d.error||'Server error');
+  }catch(e){st.textContent=e.message;st.className='save-status err';toast(e.message,'error');}
+  finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save';
+  }
+}
+document.getElementById('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveUrl();});
+
+/* COPY */
+function copyLink(url,btn){
+  navigator.clipboard.writeText(url).then(()=>{
+    const o=btn.innerHTML;
+    btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    toast('Link copied!','success',1800);
+    setTimeout(()=>btn.innerHTML=o,1600);
+  });
+}
+
+/* DELETE */
+async function deleteItem(id){
+  if(!confirm('Delete this item?'))return;
+  try{
+    const res=await fetch('/api/delete/'+id,{method:'DELETE'});
+    if(res.ok){document.getElementById('card-'+id)?.remove();toast('Deleted.','info');}
+    else throw new Error('Failed');
+  }catch(e){toast(e.message,'error');}
+}
+
+/* EDIT MODAL */
+function openEdit(id,title,summary,category){
+  document.getElementById('editId').value=id;
+  document.getElementById('editTitle').value=title;
+  document.getElementById('editSummary').value=summary;
+  const s=document.getElementById('editCategory');
+  for(let o of s.options)if(o.value===category){o.selected=true;break;}
+  document.getElementById('editModal').classList.add('active');
+  document.getElementById('editTitle').focus();
+}
+function closeModal(){document.getElementById('editModal').classList.remove('active');}
+document.getElementById('editModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+async function submitEdit(){
+  const id=document.getElementById('editId').value;
+  const title=document.getElementById('editTitle').value.trim();
+  const summary=document.getElementById('editSummary').value.trim();
+  const category=document.getElementById('editCategory').value;
+  try{
+    const res=await fetch('/api/update/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,summary,category})});
+    if(res.ok){toast('Saved!','success');closeModal();setTimeout(()=>location.reload(),800);}
+    else throw new Error('Update failed');
+  }catch(e){toast(e.message,'error');}
+}
+
+/* ASSIGN COLLECTION */
+async function assignCol(id,col,sel){
+  try{
+    const res=await fetch('/api/assign-collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,collection:col})});
+    if(res.ok)toast('Moved to "'+col+'"','success');
+    else{throw new Error('Failed');}
+  }catch(e){toast(e.message,'error');sel.value='';}
+}
+
+/* STAT COUNTER ANIMATION */
+document.querySelectorAll('.stat-val').forEach(el=>{
+  const n=parseInt(el.dataset.target||el.textContent,10);
+  if(isNaN(n)||n===0)return;
+  el.textContent='0';
+  const dur=800,start=performance.now();
+  const tick=now=>{
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,3);
+    el.textContent=Math.round(ease*n);
+    if(t<1)requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
+</script>
+</body>
+</html>

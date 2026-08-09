@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Social Saver{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+                <span class="brand-mark"><i class="fas fa-bookmark"></i></span>
+                <span>
+                    <span class="brand-kicker">Link vault</span>
+                    Social Saver
+                </span>
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="{{ url_for('dashboard') }}" class="{% if active_page == 'dashboard' %}active{% endif %}"><i class="fas fa-border-all"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('discover') }}" class="{% if active_page == 'discover' %}active{% endif %}"><i class="fas fa-compass"></i> Discover</a></li>
+                <li><a href="{{ url_for('stats_page') }}" class="{% if active_page == 'stats' %}active{% endif %}"><i class="fas fa-chart-simple"></i> Stats</a></li>
+                <li><a href="{{ url_for('collections_page') }}" class="{% if active_page == 'collections' %}active{% endif %}"><i class="fas fa-folder"></i> Collections</a></li>
+                <li><a href="{{ url_for('export_csv') }}" class="btn-export"><i class="fas fa-download"></i> Export</a></li>
+            </ul>
+        </nav>
+        {% block body %}{% endblock %}
+    </div>
+    <div id="toast" class="toast-stack"></div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

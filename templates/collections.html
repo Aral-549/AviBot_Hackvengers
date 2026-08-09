@@ -1,0 +1,59 @@
+{% set active_page = 'collections' %}
+{% extends "base.html" %}
+{% from "_cards.html" import content_card %}
+
+{% block title %}Social Saver - Collections{% endblock %}
+
+{% block body %}
+<main class="container">
+    <a href="{{ url_for('dashboard') }}" class="back-link reveal"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+
+    <section class="page-header reveal">
+        <span class="eyebrow"><i class="fas fa-folder"></i> Collections</span>
+        <h1 class="page-title">Folders for the links you keep using.</h1>
+        <p>Group saved items into working sets without moving or duplicating the original records.</p>
+    </section>
+
+    <section class="collections-bar reveal">
+        <a href="{{ url_for('collections_page') }}" class="col-chip {% if not selected_collection %}active{% endif %}"><i class="fas fa-border-all"></i> All</a>
+        {% for col in collections %}
+        <div class="col-chip-wrap">
+            <a href="{{ url_for('collections_page', collection=col) }}" class="col-chip {% if selected_collection==col %}active{% endif %}"><i class="fas fa-folder"></i> {{ col }}</a>
+            <form method="POST" action="{{ url_for('delete_collection_route') }}" class="inline-form">
+                <input type="hidden" name="name" value="{{ col }}">
+                <button type="submit" class="col-delete-btn" title="Delete collection" onclick="return confirm('Delete collection &quot;{{ col }}&quot;? Items will not be deleted.')">x</button>
+            </form>
+        </div>
+        {% endfor %}
+        <form method="POST" action="{{ url_for('create_collection_route') }}" class="inline-form">
+            <input name="name" placeholder="New collection" class="col-input" maxlength="40">
+            <button type="submit" class="col-add-btn"><i class="fas fa-plus"></i> Add</button>
+        </form>
+    </section>
+
+    <section class="stats">
+        <div class="stat reveal" style="--index: 0"><div class="stat-num">{{ all_items|length }}</div><div class="stat-lbl"><i class="fas fa-bookmark"></i> Total saved</div></div>
+        <div class="stat reveal" style="--index: 1"><div class="stat-num">{{ collections|length }}</div><div class="stat-lbl"><i class="fas fa-folder"></i> Collections</div></div>
+        {% if selected_collection %}
+        {% set selected_count = all_items | selectattr('collection', 'equalto', selected_collection) | list | length %}
+        <div class="stat reveal" style="--index: 2"><div class="stat-num">{{ selected_count }}</div><div class="stat-lbl"><i class="fas fa-layer-group"></i> In collection</div></div>
+        {% endif %}
+    </section>
+
+    {% if content_list %}
+    <section class="grid">
+        {% for item in content_list %}
+        {{ content_card(item, collections=collections) }}
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty reveal">
+        <div class="empty-inner">
+            <span class="empty-icon"><i class="fas fa-folder-open"></i></span>
+            <h2>{% if selected_collection %}This collection is empty{% else %}No saves yet{% endif %}</h2>
+            <p>{% if selected_collection %}Return to all saves and assign items to this collection.{% else %}Save links first, then group the useful ones here.{% endif %}</p>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

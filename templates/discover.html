@@ -1,0 +1,86 @@
+{% set active_page = 'discover' %}
+{% extends "base.html" %}
+{% from "_cards.html" import content_card %}
+
+{% block title %}Social Saver - Discover{% endblock %}
+
+{% block body %}
+<main class="container">
+    <section class="page-header reveal">
+        <span class="eyebrow"><i class="fas fa-compass"></i> Rediscover</span>
+        <h1 class="page-title">Browse the archive by source and subject.</h1>
+        <p>Use platform tabs, search, and category filters to find the links worth revisiting.</p>
+    </section>
+
+    <nav class="tabs reveal" aria-label="Platform filters">
+        <button class="tab {% if not selected_platform and not selected_category %}active{% endif %}" onclick="filterAll()"><i class="fas fa-border-all"></i> All</button>
+        <button class="tab {% if selected_platform=='youtube' %}active{% endif %}" onclick="filterPlatform('youtube')"><i class="fab fa-youtube"></i> YouTube</button>
+        <button class="tab {% if selected_platform=='instagram' %}active{% endif %}" onclick="filterPlatform('instagram')"><i class="fab fa-instagram"></i> Instagram</button>
+        <button class="tab {% if selected_platform=='twitter' %}active{% endif %}" onclick="filterPlatform('twitter')"><i class="fab fa-twitter"></i> X</button>
+        <button class="tab {% if selected_platform=='tiktok' %}active{% endif %}" onclick="filterPlatform('tiktok')"><i class="fab fa-tiktok"></i> TikTok</button>
+        <button class="tab {% if selected_platform=='reddit' %}active{% endif %}" onclick="filterPlatform('reddit')"><i class="fab fa-reddit"></i> Reddit</button>
+        <button class="tab {% if selected_platform=='blog' %}active{% endif %}" onclick="filterPlatform('blog')"><i class="fas fa-globe"></i> Articles</button>
+    </nav>
+
+    <form method="GET" action="{{ url_for('discover') }}" class="toolbar reveal">
+        <div class="search"><i class="fas fa-search"></i><input type="text" name="q" placeholder="Search content" value="{{ search_query or '' }}"></div>
+        <select name="platform" class="select" aria-label="Platform">
+            <option value="">All platforms</option>
+            {% for p in platforms %}
+            <option value="{{ p }}" {% if selected_platform==p %}selected{% endif %}>{{ p|title }}</option>
+            {% endfor %}
+        </select>
+        <select name="category" class="select" aria-label="Category">
+            <option value="">All categories</option>
+            {% for c in categories %}
+            <option value="{{ c }}" {% if selected_category==c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+        {% if selected_platform or selected_category or search_query %}
+        <a href="{{ url_for('discover') }}" class="btn btn-secondary"><i class="fas fa-xmark"></i> Clear</a>
+        {% endif %}
+    </form>
+
+    {% if content %}
+    <section class="grid">
+        {% for item in content %}
+        {{ content_card(item) }}
+        {% endfor %}
+    </section>
+    {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="Pagination">
+        {% if current_page > 1 %}
+        <a href="?page={{ current_page-1 }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}"><i class="fas fa-chevron-left"></i></a>
+        {% endif %}
+        {% for p in range(1, total_pages+1) %}
+            {% if p == current_page %}
+            <span class="current">{{ p }}</span>
+            {% elif p<=3 or p>=total_pages-2 or (p>=current_page-1 and p<=current_page+1) %}
+            <a href="?page={{ p }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}">{{ p }}</a>
+            {% elif p==4 or p==total_pages-3 %}
+            <span>...</span>
+            {% endif %}
+        {% endfor %}
+        {% if current_page < total_pages %}
+        <a href="?page={{ current_page+1 }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}"><i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <section class="empty reveal">
+        <div class="empty-inner">
+            <span class="empty-icon"><i class="fas fa-search"></i></span>
+            <h2>No content found</h2>
+            <p>Adjust the filters or save more links to widen the archive.</p>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.discoverUrl = "{{ url_for('discover') }}";
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% set active_page = '' %}
+{% extends "base.html" %}
+{% from "_cards.html" import platform_icon %}
+
+{% block title %}{{ content.title or 'Content Detail' }} - Social Saver{% endblock %}
+
+{% block body %}
+<main class="container">
+    <a href="{{ url_for('dashboard') }}" class="back-link reveal"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+
+    <section class="detail-layout">
+        <article class="detail-card reveal">
+            <div class="detail-media">
+                {% if content.image_url %}
+                <img src="{{ content.image_url }}" alt="{{ content.title or 'Saved content image' }}" class="detail-image" onerror="this.style.display='none';document.getElementById('ph').style.display='flex'">
+                {% endif %}
+                <div id="ph" class="card-placeholder" {% if content.image_url %}style="display:none"{% endif %}>
+                    <i class="{{ platform_icon(content.platform) }}"></i>
+                    <span>{{ content.platform|title if content.platform else 'Web' }}</span>
+                </div>
+            </div>
+
+            {% if content.platform == 'youtube' %}
+            {% set video_id = '' %}
+            {% if 'youtube.com/watch?v=' in content.url %}
+            {% set video_id = content.url.split('v=')[1].split('&')[0] %}
+            {% elif 'youtu.be/' in content.url %}
+            {% set video_id = content.url.split('youtu.be/')[1].split('?')[0] %}
+            {% endif %}
+            {% if video_id %}
+            <div class="embed-container">
+                <iframe src="https://www.youtube.com/embed/{{ video_id }}" allowfullscreen></iframe>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="detail-body">
+                <span class="card-platform"><i class="{{ platform_icon(content.platform) }}"></i> {{ content.platform or 'web' }}</span>
+                <h1 class="detail-title"><a href="{{ content.url }}" target="_blank">{{ content.title or 'Untitled' }}</a></h1>
+
+                <div class="meta-row">
+                    <span><i class="far fa-clock"></i> Saved {{ content.timestamp }}</span>
+                    {% if content.user_phone %}<span><i class="fas fa-phone"></i> {{ content.user_phone }}</span>{% endif %}
+                </div>
+
+                <div class="status-row">
+                    {% if content.video_summary %}
+                    <span class="status-pill video"><i class="fas fa-video"></i> Video summary available</span>
+                    {% elif content.video_summary_status %}
+                    <span class="status-pill empty"><i class="fas fa-circle-info"></i> {{ content.video_summary_status.replace('_', ' ') }}</span>
+                    {% endif %}
+                    {% if content.summary_source %}
+                    <span class="status-pill {{ content.summary_source }}"><i class="fas fa-brain"></i> {{ content.summary_source.replace('_', ' ') }}</span>
+                    {% endif %}
+                </div>
+
+                {% if content.video_summary %}
+                <section class="video-summary-box">
+                    <div class="video-summary-header"><span><i class="fas fa-video"></i> Video summary</span></div>
+                    <p class="prose">{{ content.video_summary }}</p>
+                </section>
+                {% elif content.video_summary_status %}
+                <section class="video-warning-box">
+                    <div class="box-header"><span><i class="fas fa-circle-info"></i> Video summary unavailable</span></div>
+                    {% if content.video_summary_status == 'video_media_missing' and content.media_extraction_status %}
+                    <p class="prose">Extraction status: {{ content.media_extraction_status.replace('_', ' ') }}.</p>
+                    {% if content.media_extraction_error %}<p class="prose">Details: {{ content.media_extraction_error }}</p>{% endif %}
+                    {% elif content.video_summary_status == 'gemini_disabled' %}
+                    <p class="prose">Gemini is not configured for this environment, so only metadata summaries are available.</p>
+                    {% else %}
+                    <p class="prose">Status: {{ content.video_summary_status.replace('_', ' ') }}.</p>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                {% if content.summary %}
+                <section class="ai-summary">
+                    <div class="ai-summary-header">
+                        <span><i class="fas fa-wand-magic-sparkles"></i> Short summary</span>
+                        {% if content.summary_source %}<span class="summary-source">{{ content.summary_source.replace('_', ' ') }}</span>{% endif %}
+                    </div>
+                    <p class="prose">{{ content.summary }}</p>
+                </section>
+                {% endif %}
+
+                {% if content.caption %}
+                <section class="original-caption">
+                    <div class="original-caption-header"><span><i class="fas fa-quote-left"></i> Original caption</span></div>
+                    <p class="prose">{{ content.caption }}</p>
+                </section>
+                {% endif %}
+
+                <div class="card-tags">
+                    {% if content.category %}<span class="card-category">{{ content.category }}</span>{% endif %}
+                    {% if content.tags %}
+                    {% for tag in content.tags.split(',') %}
+                    {% if tag.strip() %}<span class="card-tag">{{ tag.strip() }}</span>{% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+
+                <a href="{{ content.url }}" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> View original</a>
+            </div>
+        </article>
+
+        <aside class="side-panel reveal" style="--index: 1">
+            <div class="window">
+                <div class="window-chrome"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span></div>
+                <div class="window-body">
+                    <h2>Record details</h2>
+                    <div class="timeline" style="margin-top:1rem">
+                        <div class="timeline-item"><div class="date">Platform</div><div class="title">{{ content.platform|title if content.platform else 'Web' }}</div></div>
+                        <div class="timeline-item"><div class="date">Category</div><div class="title">{{ content.category or 'Uncategorized' }}</div></div>
+                        <div class="timeline-item"><div class="date">Collection</div><div class="title">{{ content.collection or 'Not assigned' }}</div></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </section>
+</main>
+{% endblock %}

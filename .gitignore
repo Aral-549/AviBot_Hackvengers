@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite
+backups/
+obsidian_vault/
+.DS_Store
+*.log
+node_modules/

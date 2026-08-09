@@ -1,0 +1,66 @@
+{% macro platform_icon(platform) -%}
+    {%- if platform == 'youtube' -%}fab fa-youtube
+    {%- elif platform == 'instagram' -%}fab fa-instagram
+    {%- elif platform == 'twitter' -%}fab fa-twitter
+    {%- elif platform == 'tiktok' -%}fab fa-tiktok
+    {%- elif platform == 'facebook' -%}fab fa-facebook
+    {%- elif platform == 'linkedin' -%}fab fa-linkedin
+    {%- elif platform == 'reddit' -%}fab fa-reddit
+    {%- elif platform == 'pinterest' -%}fab fa-pinterest
+    {%- else -%}fas fa-globe
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro content_card(item, show_actions=False, collections=None) -%}
+<a href="{{ url_for('content_detail', content_id=item.id) }}" class="card reveal" id="card-{{ item.id }}" style="--index: {{ loop.index0 if loop else 0 }}">
+    <div class="card-media">
+        {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.title or 'Saved content image' }}" class="card-img" onload="checkImg(this)" onerror="swapPh(this)">
+        {% endif %}
+        <div class="card-placeholder {{ item.platform }}" {% if item.image_url %}style="display:none"{% endif %}>
+            <i class="{{ platform_icon(item.platform) }}"></i>
+            <span>{{ item.platform|title if item.platform else 'Web' }}</span>
+        </div>
+        <span class="badge"><i class="{{ platform_icon(item.platform) }}"></i> {{ item.platform or 'web' }}</span>
+        {% if item.video_summary %}
+        <span class="badge badge-right"><i class="fas fa-video"></i> Video</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="card-title">{{ item.title or 'Untitled' }}</div>
+        {% if item.video_summary %}
+        <span class="card-signal video"><i class="fas fa-video"></i> Video summary</span>
+        {% elif item.video_summary_status %}
+        <span class="card-signal warning"><i class="fas fa-circle-info"></i> {{ item.video_summary_status.replace('_', ' ') }}</span>
+        {% elif item.summary_source %}
+        <span class="card-signal {{ item.summary_source }}"><i class="fas fa-brain"></i> {{ item.summary_source.replace('_', ' ') }}</span>
+        {% endif %}
+        <p class="card-caption">{{ item.video_summary or item.summary or item.caption or 'No description saved yet.' }}</p>
+        {% if item.category %}<span class="card-category">{{ item.category }}</span>{% endif %}
+        {% if item.tags %}
+        <div class="card-tags">
+            {% for tag in item.tags.split(',')[:3] %}
+            {% if tag.strip() %}<span class="card-tag">{{ tag.strip() }}</span>{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="card-footer">
+            <span><i class="far fa-clock"></i> {{ item.timestamp[:10] if item.timestamp else 'No date' }}</span>
+            {% if show_actions %}
+            <div class="card-actions">
+                <button class="card-btn" onclick="event.preventDefault();event.stopPropagation();copyLink({{ item.url|tojson }}, this)" title="Copy link"><i class="fas fa-link"></i></button>
+                <button class="card-btn" onclick="event.preventDefault();event.stopPropagation();regenerateAI({{ item.id }})" title="Re-run AI"><i class="fas fa-wand-magic-sparkles"></i></button>
+                <button class="card-btn" onclick="event.preventDefault();event.stopPropagation();editContent({{ item.id }})" title="Edit"><i class="fas fa-pen"></i></button>
+                <button class="card-btn delete" onclick="event.preventDefault();event.stopPropagation();deleteContent({{ item.id }})" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
+            {% elif collections is not none %}
+            <select class="assign-select" onclick="event.preventDefault();event.stopPropagation()" onchange="event.preventDefault();event.stopPropagation();assignToFolder({{ item.id }}, this)">
+                <option value="">{{ item.collection if item.collection else 'Add to collection' }}</option>
+                {% if item.collection %}<option value="">Remove from collection</option>{% endif %}
+                {% for col in collections %}<option value="{{ col }}" {% if item.collection == col %}selected{% endif %}>{{ col }}</option>{% endfor %}
+            </select>
+            {% endif %}
+        </div>
+    </div>
+</a>
+{%- endmacro %}

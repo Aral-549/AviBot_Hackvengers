@@ -1,0 +1,172 @@
+{% set active_page = 'stats' %}
+{% extends "base.html" %}
+
+{% block title %}Social Saver - Stats{% endblock %}
+
+{% block body %}
+<main class="container">
+    <a href="{{ url_for('dashboard') }}" class="back-link reveal"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+
+    <section class="page-header reveal">
+        <span class="eyebrow"><i class="fas fa-chart-simple"></i> Library pulse</span>
+        <h1 class="page-title">A quiet read on what you save.</h1>
+        <p>Track sources, categories, recent saves, and daily activity across the last year.</p>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card reveal" style="--index: 0"><div class="value">{{ stats.total }}</div><div class="label"><i class="fas fa-bookmark"></i> Total saved</div></div>
+        <div class="stat-card reveal" style="--index: 1"><div class="value">{{ stats.recent_7_days }}</div><div class="label"><i class="fas fa-calendar-week"></i> This week</div></div>
+        <div class="stat-card reveal" style="--index: 2"><div class="value">{{ stats.by_category|length }}</div><div class="label"><i class="fas fa-tags"></i> Categories</div></div>
+        <div class="stat-card reveal" style="--index: 3"><div class="value">{{ stats.unique_users }}</div><div class="label"><i class="fas fa-user"></i> Users</div></div>
+    </section>
+
+    <section class="chart-card reveal">
+        <div class="section-header"><h2><i class="fas fa-share-nodes"></i> By platform</h2></div>
+        <div class="platform-stats">
+            {% for p, count in stats.by_platform.items()|sort(attribute='1', reverse=True) %}
+            <div class="platform-stat">
+                <div class="icon">
+                    {% if p == 'youtube' %}<i class="fab fa-youtube"></i>
+                    {% elif p == 'instagram' %}<i class="fab fa-instagram"></i>
+                    {% elif p == 'twitter' %}<i class="fab fa-twitter"></i>
+                    {% elif p == 'tiktok' %}<i class="fab fa-tiktok"></i>
+                    {% elif p == 'facebook' %}<i class="fab fa-facebook"></i>
+                    {% elif p == 'linkedin' %}<i class="fab fa-linkedin"></i>
+                    {% elif p == 'reddit' %}<i class="fab fa-reddit"></i>
+                    {% else %}<i class="fas fa-globe"></i>{% endif %}
+                </div>
+                <div class="info"><div class="count">{{ count }}</div><div class="name">{{ p|title }}</div></div>
+            </div>
+            {% else %}
+            <p class="lead">No platform data yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="chart-card reveal">
+        <div class="section-header"><h2><i class="fas fa-tags"></i> By category</h2></div>
+        <div class="category-bars">
+            {% set max_count = stats.by_category.values()|max|default(1) %}
+            {% for cat, count in stats.by_category.items()|sort(attribute='1', reverse=True) %}
+            {% if loop.index <= 10 %}
+            <div class="cat-bar">
+                <div class="name" title="{{ cat }}">{{ cat }}</div>
+                <div class="bar"><div class="fill" style="width:{{ (count / max_count * 100)|int }}%">{{ count }}</div></div>
+                <div class="count">{{ count }}</div>
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="lead">No category data yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="chart-card reveal">
+        <div class="section-header"><h2><i class="fas fa-clock-rotate-left"></i> Recent activity</h2></div>
+        <div class="timeline">
+            {% for item in recent %}
+            <div class="timeline-item">
+                <div class="date">{{ item.timestamp[:10] if item.timestamp else 'No date' }}</div>
+                <div class="title">{{ item.title or 'Untitled' }}</div>
+                <div class="desc">{{ item.category or 'Uncategorized' }} / {{ item.platform|title if item.platform else 'Web' }}</div>
+            </div>
+            {% else %}
+            <p class="lead">No recent saves yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="chart-card reveal">
+        <div class="section-header"><h2><i class="fas fa-calendar-check"></i> Save activity</h2></div>
+        <p class="lead" style="font-size:0.9rem;margin-bottom:1rem">Last 12 months, one square per day.</p>
+        <div id="heatmap" class="heatmap"></div>
+        <div class="heatmap-legend">
+            Less
+            <span class="heatmap-key" style="background:#f3f2ee"></span>
+            <span class="heatmap-key" style="background:#edf3ec"></span>
+            <span class="heatmap-key" style="background:#dcebd9"></span>
+            <span class="heatmap-key" style="background:#bcd8b9"></span>
+            <span class="heatmap-key" style="background:#346538"></span>
+            More
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const rawData = {{ heatmap_data | safe }};
+    const container = document.getElementById('heatmap');
+    if (!container) return;
+
+    const today = new Date();
+    const days = [];
+    for (let i = 364; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        days.push({ date: key, count: rawData[key] || 0, day: d.getDay() });
+    }
+
+    function getColor(count) {
+        if (count === 0) return '#f3f2ee';
+        if (count === 1) return '#edf3ec';
+        if (count <= 3) return '#dcebd9';
+        if (count <= 6) return '#bcd8b9';
+        return '#346538';
+    }
+
+    const weeks = [];
+    let week = [];
+    for (let p = 0; p < days[0].day; p++) week.push(null);
+    days.forEach(day => {
+        week.push(day);
+        if (week.length === 7) {
+            weeks.push(week);
+            week = [];
+        }
+    });
+    if (week.length) weeks.push(week);
+
+    const monthLabels = document.createElement('div');
+    monthLabels.className = 'heatmap-months';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    let lastMonth = -1;
+    weeks.forEach(weekDays => {
+        const label = document.createElement('div');
+        label.className = 'heatmap-month';
+        const firstReal = weekDays.find(Boolean);
+        if (firstReal) {
+            const month = new Date(firstReal.date).getMonth();
+            if (month !== lastMonth) {
+                label.textContent = months[month];
+                lastMonth = month;
+            }
+        }
+        monthLabels.appendChild(label);
+    });
+    container.appendChild(monthLabels);
+
+    const grid = document.createElement('div');
+    grid.className = 'heatmap-grid';
+    weeks.forEach(weekDays => {
+        const column = document.createElement('div');
+        column.className = 'heatmap-week';
+        weekDays.forEach(day => {
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+            if (day) {
+                cell.style.background = getColor(day.count);
+                cell.title = `${day.date}: ${day.count} save${day.count === 1 ? '' : 's'}`;
+            } else {
+                cell.style.background = 'transparent';
+            }
+            column.appendChild(cell);
+        });
+        grid.appendChild(column);
+    });
+    container.appendChild(grid);
+})();
+</script>
+{% endblock %}
