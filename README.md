@@ -1,4 +1,4 @@
-# AviBot — AI-Powered Link Library
+# Avi — AI-Powered Link Library
 
 > Save any link via Telegram. AVI Bot scrapes, categorises, summarises, and stores it using AI — then surfaces it through a beautiful web dashboard.
 
