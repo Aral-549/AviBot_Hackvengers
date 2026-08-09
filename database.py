@@ -33,6 +33,9 @@ def append_to_backup_ledger(record: Dict) -> None:
 def get_db_connection() -> sqlite3.Connection:
     """Get a new SQLite database connection with WAL mode enabled for concurrent safety."""
     db_path = getattr(Config, 'DATABASE_PATH', None) or os.getenv('DATABASE_PATH') or DB_PATH
+    db_dir = os.path.dirname(os.path.abspath(db_path))
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=30.0)
     conn.row_factory = sqlite3.Row
     try:
