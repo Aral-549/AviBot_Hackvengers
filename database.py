@@ -16,7 +16,7 @@ from config import Config
 
 # Database file path & Backup directory
 DB_PATH = getattr(Config, 'DATABASE_PATH', None) or os.getenv('DATABASE_PATH') or os.path.join(os.path.dirname(__file__), 'social_saver.db')
-BACKUP_DIR = os.path.join(os.path.dirname(__file__), 'backups')
+BACKUP_DIR = os.getenv('BACKUP_DIR', os.path.join(os.path.dirname(__file__), 'backups'))
 BACKUP_FILE = os.path.join(BACKUP_DIR, 'link_vault_backup.jsonl')
 
 
@@ -112,6 +112,7 @@ def init_db() -> None:
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_phone ON saved_content(user_phone)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON saved_content(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_collection ON saved_content(collection)')
+        cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_url_unique ON saved_content(url)')
 
         # Full-Text Search (FTS5) Table & Triggers for Content Indexing
         try:
@@ -157,7 +158,7 @@ def init_db() -> None:
     print("Database & Backup Ledger initialized successfully!")
 
 
-OBSIDIAN_VAULT_DIR = os.path.join(os.path.dirname(__file__), 'obsidian_vault', 'notes')
+OBSIDIAN_VAULT_DIR = os.getenv('OBSIDIAN_VAULT_DIR', os.path.join(os.path.dirname(__file__), 'obsidian_vault', 'notes'))
 
 
 def export_to_obsidian_note(record: dict) -> str:
@@ -237,50 +238,36 @@ def save_content(
     """Save/update a content record in SQLite (idempotent), append to backup ledger, and write Obsidian note."""
     with get_db() as conn:
         cursor = conn.cursor()
-        # Check for existing duplicate URL
-        cursor.execute("SELECT id FROM saved_content WHERE url = ? ORDER BY id DESC LIMIT 1", (url,))
-        existing = cursor.fetchone()
-
-        if existing:
-            content_id = existing[0]
-            cursor.execute('''
-                UPDATE saved_content SET
-                    platform = COALESCE(?, platform),
-                    title = COALESCE(?, title),
-                    caption = COALESCE(?, caption),
-                    image_url = COALESCE(?, image_url),
-                    media_extraction_status = COALESCE(?, media_extraction_status),
-                    media_extraction_error = COALESCE(?, media_extraction_error),
-                    category = COALESCE(?, category),
-                    summary = COALESCE(?, summary),
-                    summary_source = COALESCE(?, summary_source),
-                    video_summary = COALESCE(?, video_summary),
-                    video_summary_status = COALESCE(?, video_summary_status),
-                    tags = COALESCE(?, tags),
-                    user_phone = COALESCE(?, user_phone),
-                    timestamp = CURRENT_TIMESTAMP
-                WHERE id = ?
-            ''', (
-                platform, title, caption, image_url,
-                media_extraction_status, media_extraction_error,
-                category, summary, summary_source,
-                video_summary, video_summary_status,
-                tags, user_phone, content_id
-            ))
-        else:
-            cursor.execute('''
-                INSERT INTO saved_content (
-                    url, platform, title, caption, image_url,
-                    media_extraction_status, media_extraction_error,
-                    category, summary, summary_source, video_summary, video_summary_status, tags, user_phone
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+        cursor.execute('''
+            INSERT INTO saved_content (
                 url, platform, title, caption, image_url,
                 media_extraction_status, media_extraction_error,
                 category, summary, summary_source, video_summary, video_summary_status, tags, user_phone
-            ))
-            content_id = cursor.lastrowid
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(url) DO UPDATE SET
+                platform = COALESCE(excluded.platform, platform),
+                title = COALESCE(excluded.title, title),
+                caption = COALESCE(excluded.caption, caption),
+                image_url = COALESCE(excluded.image_url, image_url),
+                media_extraction_status = COALESCE(excluded.media_extraction_status, media_extraction_status),
+                media_extraction_error = COALESCE(excluded.media_extraction_error, media_extraction_error),
+                category = COALESCE(excluded.category, category),
+                summary = COALESCE(excluded.summary, summary),
+                summary_source = COALESCE(excluded.summary_source, summary_source),
+                video_summary = COALESCE(excluded.video_summary, video_summary),
+                video_summary_status = COALESCE(excluded.video_summary_status, video_summary_status),
+                tags = COALESCE(excluded.tags, tags),
+                user_phone = COALESCE(excluded.user_phone, user_phone),
+                timestamp = CURRENT_TIMESTAMP
+        ''', (
+            url, platform, title, caption, image_url,
+            media_extraction_status, media_extraction_error,
+            category, summary, summary_source, video_summary, video_summary_status, tags, user_phone
+        ))
+        content_id = cursor.lastrowid or cursor.execute(
+            'SELECT id FROM saved_content WHERE url = ?', (url,)
+        ).fetchone()[0]
 
     record = {
         'id': content_id,

@@ -95,7 +95,7 @@ class ContentExtractor:
                 ytdlp_res = self._extract_with_ytdlp(url)
                 if self._is_valid_extraction(ytdlp_res):
                     if result:
-                        result = self._merge_ytdlp_result(result)
+                        result = self._merge_ytdlp_result(result, ytdlp_res)
                     else:
                         result = ytdlp_res
             except Exception as exc:
@@ -291,14 +291,14 @@ class ContentExtractor:
             'media_extraction_error': extraction_error
         }
 
-    def _merge_ytdlp_result(self, result: Dict) -> Dict:
+    def _merge_ytdlp_result(self, result: Dict, ytdlp_data: Dict = None) -> Dict:
         """Fill missing video fields from yt-dlp fallback extraction."""
         if result.get('media_url'):
             result.setdefault('media_extraction_status', 'direct_media_found')
             result.setdefault('media_extraction_error', '')
             return result
 
-        fallback = self._extract_with_ytdlp(result.get('url', ''))
+        fallback = ytdlp_data if ytdlp_data else self._extract_with_ytdlp(result.get('url', ''))
         if not fallback:
             return result
 

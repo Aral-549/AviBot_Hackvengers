@@ -436,9 +436,10 @@ class AIProcessor:
             'Personal Finance': ['money', 'invest', 'tax', 'budget', 'saving', 'finance', 'stock'],
             'Travel Destinations': ['travel', 'flight', 'hotel', 'beach', 'vacation', 'tourist', 'trip'],
         }
+        import re as _re
         for cat, keywords in keyword_map.items():
             for kw in keywords:
-                if kw in text:
+                if _re.search(r'\b' + _re.escape(kw) + r'\b', text):
                     return cat
         return 'Other'
 
@@ -516,10 +517,7 @@ class AIProcessor:
             for category in Config.DEFAULT_CATEGORIES:
                 if result.lower() == category.lower():
                     return category
-            # Fuzzy match — handle slight wording differences
-            for category in Config.DEFAULT_CATEGORIES:
-                if category.lower() in result.lower() or result.lower() in category.lower():
-                    return category
+            # No fuzzy match — fail closed to 'Other' instead of guessing
             return 'Other'
         return self._algorithmic_categorize(title, caption, url)
 
@@ -667,7 +665,8 @@ class AIProcessor:
         platform: str = '',
         media_url: str = '',
         media_type: str = '',
-        image_url: str = ''
+        image_url: str = '',
+        body_text: str = ''
     ) -> Dict:
         """Run AI tasks and return a structured result. Accepts string or dict payload."""
         if isinstance(url, dict):
@@ -679,10 +678,11 @@ class AIProcessor:
             media_url = extracted.get('media_url', '')
             media_type = extracted.get('media_type', '')
             image_url = extracted.get('image_url', '')
+            body_text = extracted.get('body_text', body_text)
         else:
             extracted = {}
 
-        body_text = extracted.get('body_text', '')
+        body_text = extracted.get('body_text', body_text)
         category = self.categorize_content(url, title, caption, body_text=body_text)
         summary, summary_source = self.summarize_content(
             url=url,
@@ -805,8 +805,8 @@ def extract_tags(url, title, caption, platform):
     return ai_processor.extract_tags(url, title, caption, platform)
 
 
-def process_content(url_or_dict, title='', caption='', platform='', media_url='', media_type='', image_url=''):
-    return ai_processor.process_content(url_or_dict, title, caption, platform, media_url, media_type, image_url)
+def process_content(url_or_dict, title='', caption='', platform='', media_url='', media_type='', image_url='', body_text=''):
+    return ai_processor.process_content(url_or_dict, title, caption, platform, media_url, media_type, image_url, body_text)
 
 
 def rag_answer(question, context):
