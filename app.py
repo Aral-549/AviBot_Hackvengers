@@ -21,6 +21,7 @@ from database import (
 )
 from content_extractor import extract_content
 from ai_processor import process_content, ai_processor
+from telegram_bot import poll_telegram_bot
 
 # Create Flask app
 app = Flask(__name__)
@@ -28,6 +29,11 @@ app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 # Initialize database
 init_db()
+
+# Start Telegram polling in a background daemon thread
+# (runs regardless of whether app is started via gunicorn or python directly)
+_telegram_thread = threading.Thread(target=poll_telegram_bot, daemon=True, name="telegram-poll")
+_telegram_thread.start()
 
 
 # ==================== Dashboard Routes ====================
