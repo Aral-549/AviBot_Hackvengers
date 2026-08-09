@@ -17,7 +17,7 @@ from database import (
     get_random_content_by_category, get_related_content,
     get_content_count_by_category, get_total_content_count, get_streak_stats,
     get_collections, create_collection, assign_collection, delete_collection,
-    get_daily_save_counts
+    get_daily_save_counts, get_content_count
 )
 from content_extractor import extract_content
 from ai_processor import process_content, ai_processor
@@ -34,14 +34,12 @@ init_db()
 
 @app.route('/favicon.ico')
 def favicon():
-    """Serve favicon - returns empty response"""
-    response = make_response('', 204)
-    return response
+    return '', 204
 
 
 @app.route('/')
 def index():
-    """Main dashboard page"""
+    """Root route - redirects to dashboard"""
     return redirect(url_for('dashboard'))
 
 
@@ -51,28 +49,30 @@ def dashboard():
     page = request.args.get('page', 1, type=int)
     platform = request.args.get('platform', '')
     category = request.args.get('category', '')
-    # Read the search query and pass it to template
     search_query = request.args.get('q', '').strip()
 
     limit = Config.ITEMS_PER_PAGE
     offset = (page - 1) * limit
 
-    # If search query exists, use search_content instead of get_all_content
-    if search_query:
-        content = search_content(search_query, limit=limit)
-    else:
-        content = get_all_content(
-            limit=limit,
-            offset=offset,
-            platform=platform if platform else None,
-            category=category if category else None
-        )
+    content = get_all_content(
+        limit=limit,
+        offset=offset,
+        platform=platform if platform else None,
+        category=category if category else None,
+        search_query=search_query if search_query else None
+    )
+
+    total_count = get_content_count(
+        platform=platform if platform else None,
+        category=category if category else None,
+        search_query=search_query if search_query else None
+    )
 
     stats = get_stats()
     categories = get_categories()
     platforms = get_platforms()
 
-    total_pages = (stats['total'] + limit - 1) // limit
+    total_pages = max(1, (total_count + limit - 1) // limit)
 
     response = make_response(render_template(
         'dashboard.html',
@@ -130,52 +130,6 @@ def stats_page():
         recent=get_all_content(limit=8),
         collections=get_collections()
     )
-
-
-@app.route('/discover')
-def discover():
-    """Discover random content"""
-    page = request.args.get('page', 1, type=int)
-    platform = request.args.get('platform', '')
-    category = request.args.get('category', '')
-    search_query = request.args.get('q', '').strip()
-    
-    limit = Config.ITEMS_PER_PAGE
-    offset = (page - 1) * limit
-    
-    if search_query:
-        content = search_content(search_query, limit=limit)
-    else:
-        content = get_all_content(
-            limit=limit,
-            offset=offset,
-            platform=platform if platform else None,
-            category=category if category else None
-        )
-    
-    stats = get_stats()
-    categories = get_categories()
-    platforms = get_platforms()
-    
-    total_pages = (stats['total'] + limit - 1) // limit
-    
-    return render_template(
-        'discover.html',
-        content=content,
-        stats=stats,
-        categories=categories,
-        platforms=platforms,
-        current_page=page,
-        total_pages=total_pages,
-        selected_platform=platform,
-        selected_category=category,
-        search_query=search_query,
-        collections=get_collections()
-    )
-
-
-# ==================== API Routes ====================
-
 @app.route('/api/content', methods=['GET'])
 def api_get_content():
     """API: Get all content with filters"""

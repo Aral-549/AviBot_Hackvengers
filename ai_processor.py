@@ -679,8 +679,10 @@ class AIProcessor:
             media_url = extracted.get('media_url', '')
             media_type = extracted.get('media_type', '')
             image_url = extracted.get('image_url', '')
+        else:
+            extracted = {}
 
-        body_text = extracted.get('body_text', '') if isinstance(extracted, dict) else ''
+        body_text = extracted.get('body_text', '')
         category = self.categorize_content(url, title, caption, body_text=body_text)
         summary, summary_source = self.summarize_content(
             url=url,

@@ -249,12 +249,24 @@ def save_content(
                     title = COALESCE(?, title),
                     caption = COALESCE(?, caption),
                     image_url = COALESCE(?, image_url),
+                    media_extraction_status = COALESCE(?, media_extraction_status),
+                    media_extraction_error = COALESCE(?, media_extraction_error),
                     category = COALESCE(?, category),
                     summary = COALESCE(?, summary),
+                    summary_source = COALESCE(?, summary_source),
+                    video_summary = COALESCE(?, video_summary),
+                    video_summary_status = COALESCE(?, video_summary_status),
                     tags = COALESCE(?, tags),
+                    user_phone = COALESCE(?, user_phone),
                     timestamp = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (platform, title, caption, image_url, category, summary, tags, content_id))
+            ''', (
+                platform, title, caption, image_url,
+                media_extraction_status, media_extraction_error,
+                category, summary, summary_source,
+                video_summary, video_summary_status,
+                tags, user_phone, content_id
+            ))
         else:
             cursor.execute('''
                 INSERT INTO saved_content (
@@ -277,8 +289,13 @@ def save_content(
         'title': title,
         'caption': caption,
         'image_url': image_url,
+        'media_extraction_status': media_extraction_status,
+        'media_extraction_error': media_extraction_error,
         'category': category,
         'summary': summary,
+        'summary_source': summary_source,
+        'video_summary': video_summary,
+        'video_summary_status': video_summary_status,
         'tags': tags,
         'user_phone': user_phone,
         'timestamp': datetime.now().isoformat()
@@ -294,9 +311,11 @@ def get_all_content(
     offset: int = 0,
     platform: str = None,
     category: str = None,
-    user_phone: str = None
+    user_phone: str = None,
+    search_query: str = None,
+    collection: str = None
 ) -> List[Dict]:
-    """Retrieve saved content records with optional filters."""
+    """Retrieve saved content records with optional filters and search."""
     query = 'SELECT * FROM saved_content WHERE 1=1'
     params = []
 
@@ -312,6 +331,15 @@ def get_all_content(
         query += ' AND user_phone = ?'
         params.append(user_phone)
 
+    if collection:
+        query += ' AND collection = ?'
+        params.append(collection)
+
+    if search_query and search_query.strip():
+        q = f'%{search_query.strip()}%'
+        query += ' AND (title LIKE ? OR caption LIKE ? OR tags LIKE ? OR summary LIKE ? OR category LIKE ? OR url LIKE ? OR video_summary LIKE ?)'
+        params.extend([q, q, q, q, q, q, q])
+
     query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
     params.extend([limit, offset])
 
@@ -322,6 +350,46 @@ def get_all_content(
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+def get_content_count(
+    platform: str = None,
+    category: str = None,
+    user_phone: str = None,
+    search_query: str = None,
+    collection: str = None
+) -> int:
+    """Get count of saved content records matching filters and search query."""
+    query = 'SELECT COUNT(*) FROM saved_content WHERE 1=1'
+    params = []
+
+    if platform:
+        query += ' AND platform = ?'
+        params.append(platform)
+
+    if category:
+        query += ' AND category = ?'
+        params.append(category)
+
+    if user_phone:
+        query += ' AND user_phone = ?'
+        params.append(user_phone)
+
+    if collection:
+        query += ' AND collection = ?'
+        params.append(collection)
+
+    if search_query and search_query.strip():
+        q = f'%{search_query.strip()}%'
+        query += ' AND (title LIKE ? OR caption LIKE ? OR tags LIKE ? OR summary LIKE ? OR category LIKE ? OR url LIKE ? OR video_summary LIKE ?)'
+        params.extend([q, q, q, q, q, q, q])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 
 def get_content_by_id(content_id: int) -> Optional[Dict]:
@@ -645,46 +713,23 @@ def get_popular_tags(limit: int = 20) -> List[Dict]:
     return [{'tag': tag, 'count': count} for tag, count in sorted_tags]
 
 
-def search_content(query: str, limit: int = 20) -> List[Dict]:
-    """
-    Search saved content using Full-Text Search (FTS5) with LIKE fallback.
-    """
-    if not query or not query.strip():
-        return get_all_content(limit=limit)
-
-    clean_query = query.strip()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # 1. Try Full-Text Search (FTS) first
-    try:
-        # Sanitize query terms for FTS MATCH
-        terms = [f'"{term}"' for term in clean_query.split() if term and term not in '""\'\'']
-        fts_query = ' OR '.join(terms)
-        if fts_query:
-            cursor.execute('''
-                SELECT s.* FROM saved_content s
-                JOIN saved_content_fts f ON s.id = f.rowid
-                WHERE saved_content_fts MATCH ?
-                ORDER BY s.timestamp DESC LIMIT ?
-            ''', (fts_query, limit))
-            rows = cursor.fetchall()
-            if rows:
-                conn.close()
-                return [dict(row) for row in rows]
-    except sqlite3.OperationalError:
-        pass
-
-    # 2. Fall back to LIKE search if FTS returned 0 results or encountered FTS syntax error
-    search_pattern = f'%{clean_query}%'
-    cursor.execute('''
-        SELECT * FROM saved_content 
-        WHERE title LIKE ? OR caption LIKE ? OR tags LIKE ? OR summary LIKE ? OR category LIKE ? OR url LIKE ?
-        ORDER BY timestamp DESC LIMIT ?
-    ''', (search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, limit))
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+def search_content(
+    query: str,
+    limit: int = 20,
+    offset: int = 0,
+    platform: str = None,
+    category: str = None,
+    collection: str = None
+) -> List[Dict]:
+    """Search saved content with full filter and pagination support."""
+    return get_all_content(
+        limit=limit,
+        offset=offset,
+        platform=platform,
+        category=category,
+        search_query=query,
+        collection=collection
+    )
 
 
 def delete_content(content_id: int) -> bool:
